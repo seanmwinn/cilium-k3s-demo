@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: alliance
+  labels:
+    name: alliance
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: x-wing-red
+  namespace: alliance
+spec:
+  selector:
+    matchLabels:
+      name: x-wing-red
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        name: x-wing-red
+    spec:
+      containers:
+      - name: x-wing-red
+        image: docker.io/cilium/json-mock:1.0
+        imagePullPolicy: IfNotPresent
+        command: ["bash", "-c", "while true; do curl -sS -o /dev/null security-api.empire.svc.cluster.local; sleep $(( ( RANDOM % 10 )  + 1 )); done"]

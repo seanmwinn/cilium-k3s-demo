@@ -1,0 +1,38 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: r2d2
+  namespace: alliance
+spec:
+  selector:
+    matchLabels:
+      name: r2d2
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: r2d2
+    spec:
+      containers:
+      - name: r2d2
+        image: docker.io/cilium/json-mock:1.0
+        imagePullPolicy: IfNotPresent
+        command: ["bash", "-c", "while true; do curl -sS -o /dev/null janitor-bots.empire.svc.cluster.local; sleep $(( ( RANDOM % 10 )  + 1 )); done"]
+---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: "janitor-bots-backdoor"
+  namespace: empire
+spec:
+  endpointSelector:
+    matchLabels: {}
+  ingress:
+  - fromEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: alliance
+  egress:
+  - toEndpoints:
+    - matchLabels:
+        name: janitor-bot

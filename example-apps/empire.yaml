@@ -1,0 +1,169 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: empire
+  labels:
+    name: empire
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: security-api
+  namespace: empire
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+  selector:
+    name: security-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: security-api
+  namespace: empire
+spec:
+  selector:
+    matchLabels:
+      name: security-api
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        name: security-api
+    spec:
+      containers:
+      - name: security-api
+        image: docker.io/nginx:1.15.8
+        volumeMounts:
+          - name: html
+            mountPath: /usr/share/nginx/html/
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          periodSeconds: 1
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+      volumes:
+        - name: html
+          configMap:
+            name: security-api-response
+            items:
+              - key: message
+                path: index.html
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: security-api-response
+  namespace: empire
+data:
+  message: "{\"Imperial-Base\": \"Naboo\", \"Access\": \"Granted\"}\n"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: docking-doors
+  namespace: empire
+spec:
+  ports:
+  - port: 80
+  selector:
+    name: docking-door
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docking-door
+  namespace: empire
+spec:
+  selector:
+    matchLabels:
+      name: docking-door
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        name: docking-door
+    spec:
+      containers:
+      - name: docking-door
+        image: docker.io/cilium/json-mock:1.0
+        imagePullPolicy: IfNotPresent
+        command: ["bash", "-c", "while true; do curl -sS security-api;sleep 1;done"]
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: janitor-bots
+  namespace: empire
+spec:
+  ports:
+  - port: 80
+  selector:
+    name: janitor-bot
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: janitor-bots-response
+  namespace: empire
+data:
+  message: "{\"Imperial-Base\": \"Naboo\", \"Janitor-Bot-Admin\": \"Granted\"}\n"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: janitor-bot
+  namespace: empire
+spec:
+  selector:
+    matchLabels:
+      name: janitor-bot
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        name: janitor-bot
+    spec:
+      containers:
+      - name: janitor-bot
+        image: docker.io/nginx:1.15.8
+        volumeMounts:
+          - name: html
+            mountPath: /usr/share/nginx/html/
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          periodSeconds: 1
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+      volumes:
+        - name: html
+          configMap:
+            name: janitor-bots-response
+            items:
+              - key: message
+                path: index.html
+---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: "secure-empire"
+  namespace: empire
+spec:
+  endpointSelector:
+    matchLabels:
+      {}
+  ingress:
+  - fromEndpoints:
+    - matchLabels:
+        {}

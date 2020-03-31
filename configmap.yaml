@@ -1,0 +1,16 @@
+configInline:
+  peers:
+  - peer-address: 192.168.80.10
+    peer-asn: 65000
+    my-asn: 65000
+  - peer-address: 192.168.80.200
+    peer-asn: 65000
+    my-asn: 65000
+  - peer-address: 192.168.80.201
+    peer-asn: 65000
+    my-asn: 65000
+  address-pools:
+  - name: default
+    protocol: layer2
+    addresses:
+    - 192.168.80.101-192.168.80.150
